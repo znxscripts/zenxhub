@@ -1,376 +1,143 @@
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
--- Wait for PlayerGui with longer timeout
-local playerGui
-local success, err = pcall(function()
-    playerGui = player:WaitForChild("PlayerGui", 15)
-end)
-if not success or not playerGui then
-    warn("Failed to access PlayerGui: " .. tostring(err))
-    return
-end
-print("PlayerGui accessed successfully")
-
--- 🌱 Initial Loading Screen
-local loadingGui = Instance.new("ScreenGui")
-loadingGui.Name = "LoadingScreen"
-loadingGui.IgnoreGuiInset = true
-loadingGui.ResetOnSpawn = false
-loadingGui.Enabled = true
-loadingGui.Parent = playerGui
-print("Loading ScreenGui created and parented")
-
-local loadingFrame = Instance.new("Frame")
-loadingFrame.Size = UDim2.new(0, 260, 0, 100)
-loadingFrame.Position = UDim2.new(0.5, -130, 0.5, -50)
-loadingFrame.BackgroundColor3 = Color3.fromRGB(110, 180, 100)
-loadingFrame.BackgroundTransparency = 0.3
-loadingFrame.BorderSizePixel = 0
-loadingFrame.Visible = true
-loadingFrame.Parent = loadingGui
-print("Loading frame created and parented")
-
-local corner = Instance.new("UICorner", loadingFrame)
-corner.CornerRadius = UDim.new(0, 12)
-print("Loading frame corner added")
-
-local loadingText = Instance.new("TextLabel")
-loadingText.Text = "🌱 Loading... 0%"
-loadingText.Size = UDim2.new(1, 0, 1, 0)
-loadingText.BackgroundTransparency = 1
-loadingText.Font = Enum.Font.GothamBold
-loadingText.TextScaled = true
-loadingText.TextColor3 = Color3.fromRGB(40, 80, 40)
-loadingText.TextTransparency = 0
-loadingText.Parent = loadingFrame
-print("Loading text created and parented")
-
--- 🌿 Main GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "GardenGui"
-screenGui.ResetOnSpawn = false
-screenGui.IgnoreGuiInset = true
-screenGui.Enabled = false
-screenGui.Parent = playerGui
-print("Main ScreenGui created and parented")
-
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 190, 0, 150)
-mainFrame.Position = UDim2.new(0.5, -95, 0.5, -75)
-mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-mainFrame.BackgroundColor3 = Color3.fromRGB(120, 180, 100)
-mainFrame.BackgroundTransparency = 0
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Visible = true
-mainFrame.Parent = screenGui
-print("Main frame created and parented")
-
-local mainCorner = Instance.new("UICorner", mainFrame)
-mainCorner.CornerRadius = UDim.new(0, 14)
-
-local stroke = Instance.new("UIStroke", mainFrame)
-stroke.Color = Color3.fromRGB(80, 120, 80)
-stroke.Thickness = 2
-
-local gradient = Instance.new("UIGradient", mainFrame)
-gradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(110, 170, 100)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 200, 120))
+local mutations = {
+    "Shiny", "Inverted", "Frozen", "Windy", "Golden", "Mega", "Tiny",
+    "Tranquil", "IronSkin", "Radiant", "Rainbow", "Shocked", "Ascended"
 }
-gradient.Rotation = 45
-print("Main frame styling added")
+local currentMutation = mutations[math.random(#mutations)]
+local espVisible = true
 
--- 🌸 Title
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Name = "TitleLabel"
-titleLabel.Size = UDim2.new(1, -20, 0.25, 0)
-titleLabel.Position = UDim2.new(0, 10, 0, 5)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "🌿 Level Up Your Pets"
-titleLabel.TextScaled = true
-titleLabel.Font = Enum.Font.GothamBlack
-titleLabel.TextColor3 = Color3.fromRGB(200, 255, 200)
-titleLabel.TextStrokeTransparency = 0.5
-titleLabel.TextWrapped = true
-titleLabel.TextTransparency = 0
-titleLabel.Parent = mainFrame
-print("Title label added")
+local gui = Instance.new("ScreenGui")
+gui.Name = "PetMutationFinder"
+gui.ResetOnSpawn = false
+gui.Parent = PlayerGui
 
--- 👤 Avatar + Username Display
-local userFrame = Instance.new("Frame")
-userFrame.Size = UDim2.new(1, -20, 0, 30)
-userFrame.Position = UDim2.new(0, 10, 0.27, 0)
-userFrame.BackgroundTransparency = 1
-userFrame.Parent = mainFrame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 185)
+frame.Position = UDim2.new(0.4, 0, 0.4, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+frame.BorderColor3 = Color3.fromRGB(80, 80, 90)
+frame.BorderSizePixel = 2
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
 
-local avatarImage = Instance.new("ImageLabel")
-avatarImage.Size = UDim2.new(0, 24, 0, 24)
-avatarImage.Position = UDim2.new(0, 0, 0.5, -12)
-avatarImage.BackgroundTransparency = 1
-avatarImage.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. player.UserId .. "&width=420&height=420&format=png"
-avatarImage.ImageTransparency = 0
-avatarImage.Parent = userFrame
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+Instance.new("UIStroke", frame).Color = Color3.fromRGB(100, 100, 110)
 
-local avatarCorner = Instance.new("UICorner", avatarImage)
-avatarCorner.CornerRadius = UDim.new(1, 0)
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 35)
+title.Text = "🔬 Pet Mutation Finder"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
 
-local nameLabel = Instance.new("TextLabel")
-nameLabel.Size = UDim2.new(1, -30, 1, 0)
-nameLabel.Position = UDim2.new(0, 30, 0, 0)
-nameLabel.BackgroundTransparency = 1
-nameLabel.Text = "User: " .. player.Name
-nameLabel.TextScaled = true
-nameLabel.Font = Enum.Font.Gotham
-nameLabel.TextColor3 = Color3.fromRGB(200, 255, 200)
-nameLabel.TextTransparency = 0.2
-nameLabel.TextStrokeTransparency = 1
-nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-nameLabel.Parent = userFrame
-print("Avatar and username added")
+local function createButton(text, yPos, color)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.9, 0, 0, 35)
+	btn.Position = UDim2.new(0.05, 0, 0, yPos)
+	btn.BackgroundColor3 = color
+	btn.Text = text
+	btn.Font = Enum.Font.GothamMedium
+	btn.TextSize = 16
+	btn.TextColor3 = Color3.new(0, 0, 0)
+	btn.AutoButtonColor = false
 
--- 🐾 Level Up Button
-local button = Instance.new("TextButton")
-button.Name = "LevelUpButton"
-button.Size = UDim2.new(0.8, 0, 0.25, 0)
-button.Position = UDim2.new(0.1, 0, 0.6, 0)
-button.BackgroundColor3 = Color3.fromRGB(90, 200, 90)
-button.Text = "🌱 Level Up 50 Instantly"
-button.TextScaled = true
-button.Font = Enum.Font.GothamBold
-button.TextColor3 = Color3.new(1, 1, 1)
-button.AutoButtonColor = true
-button.TextTransparency = 0
-button.Parent = mainFrame
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+	local stroke = Instance.new("UIStroke", btn)
+	stroke.Color = Color3.fromRGB(0, 0, 0)
+	stroke.Thickness = 1.2
 
-local buttonCorner = Instance.new("UICorner", button)
-buttonCorner.CornerRadius = UDim.new(0, 10)
+	btn.MouseEnter:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = color:Lerp(Color3.new(1,1,1), 0.2)}):Play()
+	end)
+	btn.MouseLeave:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = color}):Play()
+	end)
 
-local buttonStroke = Instance.new("UIStroke", button)
-buttonStroke.Color = Color3.fromRGB(70, 160, 70)
-buttonStroke.Thickness = 1.5
-print("Level Up button added")
+	btn.Parent = frame
+	return btn
+end
 
--- 🌼 Notification Label
-local notificationLabel = Instance.new("TextLabel")
-notificationLabel.Name = "NotificationLabel"
-notificationLabel.Size = UDim2.new(1, -20, 0, 20)
-notificationLabel.Position = UDim2.new(0, 10, 0.5, 0)
-notificationLabel.BackgroundTransparency = 1
-notificationLabel.Text = ""
-notificationLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-notificationLabel.TextStrokeTransparency = 0.3
-notificationLabel.TextScaled = true
-notificationLabel.Font = Enum.Font.GothamBold
-notificationLabel.TextXAlignment = Enum.TextXAlignment.Center
-notificationLabel.TextTransparency = 0
-notificationLabel.Parent = mainFrame
-print("Notification label added")
+local reroll = createButton("🎲 Mutation Reroll", 45, Color3.fromRGB(140, 200, 255))
+local toggle = createButton("👁 Toggle Mutation", 90, Color3.fromRGB(180, 255, 180))
 
--- 🌿 Credit
-local credit = Instance.new("TextLabel")
-credit.Name = "Credit"
-credit.Size = UDim2.new(1, -10, 0, 16)
-credit.Position = UDim2.new(0, 5, 1, -18)
+-- 🏷 Credit label at the bottom
+local credit = Instance.new("TextLabel", frame)
+credit.Size = UDim2.new(1, 0, 0, 20)
+credit.Position = UDim2.new(0, 0, 1, -20)
+credit.Text = "Made by KentNeedprofits"
+credit.TextColor3 = Color3.fromRGB(200, 200, 200)
 credit.BackgroundTransparency = 1
-credit.Text = "Made by: yawnjiin"
-credit.TextScaled = true
 credit.Font = Enum.Font.Gotham
-credit.TextColor3 = Color3.fromRGB(255, 255, 250)
-credit.TextTransparency = 0.3
-credit.TextStrokeTransparency = 0.8
-credit.Parent = mainFrame
-print("Credit label added")
+credit.TextSize = 13
 
--- Valid Pets List
-local validPets = {
-    "Raccoon",
-    "T-rex",
-    "Trex",
-    "Fennec Fox",
-    "Dragonfly",
-    "Butterfly",
-    "Disco Bee",
-    "Mimic Octopus",
-    "Spinosaurus",
-    "Queen Bee"
-}
-
--- Simple Loading Function (No Tweens)
-local function animateLoading(targetGui, targetFrame, textLabel, callback)
-    local success, err = pcall(function()
-        print("Starting loading for " .. targetGui.Name)
-        targetFrame.Visible = true
-        textLabel.Text = (targetGui.Name == "MiniLoading" and "🐾 Pets Level Up! 0%" or "🌱 Loading... 0%")
-        for i = 1, 100 do
-            textLabel.Text = (targetGui.Name == "MiniLoading" and "🐾 Pets Level Up! " or "🌱 Loading... ") .. i .. "%"
-            wait(0.15) -- 15 seconds total (100 * 0.15)
-        end
-        print("Loading completed for " .. targetGui.Name)
-        targetGui:Destroy()
-        print("Loading GUI destroyed: " .. targetGui.Name)
-        if callback then
-            callback()
-        end
-    end)
-    if not success then
-        warn("Loading error for " .. targetGui.Name .. ": " .. err)
-        textLabel.Text = "Loading error"
-        wait(3)
-        targetGui:Destroy()
-        if callback then
-            callback()
-        end
-    end
+-- 🔍 Find mutation machine
+local function findMachine()
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		if obj:IsA("Model") and obj.Name:lower():find("mutation") then
+			return obj
+		end
+	end
 end
 
--- Show Main GUI Function
-local function showMainGui()
-    local success, err = pcall(function()
-        print("Showing main GUI")
-        screenGui.Enabled = true
-        mainFrame.Visible = true
-        notificationLabel.Text = ""
-        print("Main GUI shown")
-    end)
-    if not success then
-        warn("Main GUI show error: " .. err)
-        screenGui.Enabled = true
-        mainFrame.Visible = true
-        notificationLabel.Text = "Main GUI loaded with error"
-        wait(3)
-        notificationLabel.Text = ""
-        print("Main GUI shown via fallback")
-    end
+local machine = findMachine()
+if not machine or not machine:FindFirstChildWhichIsA("BasePart") then
+	warn("Pet Mutation Machine not found.")
+	return
 end
 
--- Button Action with Flexible Pet Name Check and Visual Rename
-button.MouseButton1Click:Connect(function()
-    local success, err = pcall(function()
-        print("Level Up button clicked")
-        local char
-        local charSuccess, charErr = pcall(function()
-            char = player.Character or player.CharacterAdded:Wait(10)
-        end)
-        if not charSuccess or not char then
-            warn("Failed to access character: " .. tostring(charErr))
-            notificationLabel.Text = "Error: Character not loaded"
-            wait(3)
-            notificationLabel.Text = ""
-            return
-        end
+local basePart = machine:FindFirstChildWhichIsA("BasePart")
 
-        local tool = char:FindFirstChildOfClass("Tool")
-        if tool then
-            local isValidPet = false
-            local petName = nil
-            for _, pet in ipairs(validPets) do
-                if string.match(tool.Name, "^" .. pet) then
-                    isValidPet = true
-                    petName = pet
-                    break
-                end
-            end
-            if isValidPet then
-                notificationLabel.Text = ""
-                print("Valid pet found: " .. tool.Name)
-                screenGui.Enabled = false
-                -- Mini Loading GUI
-                local miniGui = Instance.new("ScreenGui")
-                miniGui.Name = "MiniLoading"
-                miniGui.IgnoreGuiInset = true
-                miniGui.ResetOnSpawn = false
-                miniGui.Enabled = true
-                miniGui.Parent = playerGui
-                print("Mini Loading GUI created and parented")
+-- 💡 Stylish ESP
+local espGui = Instance.new("BillboardGui", basePart)
+espGui.Name = "MutationESP"
+espGui.Adornee = basePart
+espGui.Size = UDim2.new(0, 200, 0, 40)
+espGui.StudsOffset = Vector3.new(0, 3, 0)
+espGui.AlwaysOnTop = true
 
-                local miniFrame = Instance.new("Frame")
-                miniFrame.Size = UDim2.new(0, 240, 0, 80)
-                miniFrame.Position = UDim2.new(0.5, -120, 0.5, -40)
-                miniFrame.BackgroundColor3 = Color3.fromRGB(110, 180, 100)
-                miniFrame.BackgroundTransparency = 0.3
-                miniFrame.BorderSizePixel = 0
-                miniFrame.Visible = true
-                miniFrame.Parent = miniGui
+local espLabel = Instance.new("TextLabel", espGui)
+espLabel.Size = UDim2.new(1, 0, 1, 0)
+espLabel.BackgroundTransparency = 1
+espLabel.Font = Enum.Font.GothamBold
+espLabel.TextSize = 24
+espLabel.TextStrokeTransparency = 0.3
+espLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+espLabel.Text = currentMutation
 
-                local miniCorner = Instance.new("UICorner", miniFrame)
-                miniCorner.CornerRadius = UDim.new(0, 10)
-
-                local progress = Instance.new("TextLabel")
-                progress.Size = UDim2.new(1, 0, 1, 0)
-                progress.BackgroundTransparency = 1
-                progress.Font = Enum.Font.GothamBold
-                progress.TextColor3 = Color3.fromRGB(40, 80, 40)
-                progress.TextScaled = true
-                progress.Text = "🐾 Pets Level Up! 0%"
-                progress.TextTransparency = 0
-                progress.Parent = miniFrame
-                print("Mini loading text created")
-
-                animateLoading(miniGui, miniFrame, progress, function()
-                    -- Parse current tool name for weight and age
-                    local currentWeight = 0
-                    local currentAge = 0
-                    local weightMatch = string.match(tool.Name, "%[(.-) KG%]")
-                    local ageMatch = string.match(tool.Name, "%[Age (.-)%]")
-                    if weightMatch then
-                        currentWeight = tonumber(weightMatch) or 0
-                    end
-                    if ageMatch then
-                        currentAge = tonumber(ageMatch) or 0
-                    end
-                    print("Parsed tool: " .. tool.Name .. " (Weight: " .. currentWeight .. ", Age: " .. currentAge .. ")")
-
-                    -- Calculate new values
-                    local newWeight = currentWeight + 5
-                    local newAge = 50
-                    newWeight = tonumber(string.format("%.2f", newWeight)) -- Format to 2 decimals
-
-                    -- Update tool name (client-side)
-                    local newName = petName .. " [" .. newWeight .. " KG] [Age " .. newAge .. "]"
-                    tool.Name = newName
-                    print("Tool renamed to: " .. newName)
-
-                    screenGui.Enabled = true
-                    notificationLabel.Text = "Pet leveled up!"
-                    print("Pet leveled up: " .. newName)
-                    wait(3)
-                    notificationLabel.Text = ""
-                end)
-            else
-                local message = "Please equip a Divine pet"
-                notificationLabel.Text = message
-                print(message .. " (Found: " .. tool.Name .. ")")
-                wait(3)
-                notificationLabel.Text = ""
-            end
-        else
-            local message = "Please equip a Divine pet"
-            notificationLabel.Text = message
-            print(message)
-            wait(3)
-            notificationLabel.Text = ""
-        end
-    end)
-    if not success then
-        warn("Button action error: " .. err)
-        notificationLabel.Text = "Error leveling up pet"
-        wait(3)
-        notificationLabel.Text = ""
-    end
+-- 🌈 Animate rainbow color
+local hue = 0
+RunService.RenderStepped:Connect(function()
+	if espVisible then
+		hue = (hue + 0.01) % 1
+		espLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+	end
 end)
 
--- Start Initial Animation
-local success, err = pcall(function()
-    print("Starting initial loading")
-    animateLoading(loadingGui, loadingFrame, loadingText, showMainGui)
-end)
-if not success then
-    warn("Initial loading failed: " .. err)
-    loadingText.Text = "Loading error"
-    wait(3)
-    loadingGui:Destroy()
-    showMainGui()
+-- ♻️ Reroll effect
+local function animateMutationReroll()
+	reroll.Text = "⏳ Rerolling..."
+	local duration = 2
+	local interval = 0.1
+	for i = 1, math.floor(duration / interval) do
+		espLabel.Text = mutations[math.random(#mutations)]
+		wait(interval)
+	end
+	currentMutation = mutations[math.random(#mutations)]
+	espLabel.Text = currentMutation
+	reroll.Text = "🎲 Mutation Reroll"
 end
+
+toggle.MouseButton1Click:Connect(function()
+	espVisible = not espVisible
+	espGui.Enabled = espVisible
+end)
+
+reroll.MouseButton1Click:Connect(animateMutationReroll)
